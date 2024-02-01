@@ -36,7 +36,6 @@ library(tidyverse)
 library(ggstatsplot)
 library(ggplot2)
 library(png)
-library(pwr)
 ```
 
 
