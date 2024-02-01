@@ -1,0 +1,229 @@
+---
+title: "**Examining Equity Across SDG 6.2.1a Progress in Thailand Using R and Tableau**"
+author: "A. Malinish, M.S."
+date: "2023-01-10"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## **Abstract**
+
+Following the conclusion of the Millennium Development Goals (MDGs), the UN set forth the Sustainable Development Goals (SDGs) in 2015 to be adopted by all UN member countries, including Thailand (IMF, 2023). An environmental concern that Thailand has struggled with since the implementation of the UN’s MDGs and SDGs is access to sustainably managed water and water sanitation services (UN, n.d.; World, n.d.). The goal of this analysis was to examine Thailand’s reported progress on SDG 6.2.1a, the "proportion of population using safely managed sanitation services (UN, n.d.-a)", to determine whether progress on the goal is equal across the country’s rural and urban regions. The results of this analysis revealed that SDG 6.2.1a attainment has been unequally observed between rural and urban regions, suggesting a potential disparity in access in sanitation services. Moreover, further examination of this relationship revealed the disparity between regions may be growing over time.  For this reason, it is recommended that equitable access remains a key consideration for Thailand as the country continues to make progress on improving its water sources, availability, and sanitation services.  
+
+## **Introduction**
+
+Following the conclusion of the Millennium Development Goals (MDGs) in 2015, the United Nations (UN) set forth the Sustainable Development Goals (SDGs) to be adopted by its member countries through 2030 (IMF, 2023). Broad in scope, the UN's SDGs focus on five different areas: people, planet, peace, prosperity, and partnership (IMF, 2023). The goals also place additional emphasis on economic, social, and environmental sustainability (IMF, 2023). 
+
+This analysis will examine Thailand's progress towards achieving the UN's Sustainable Development Goals, specifically in relation to SDG 6. The overarching aim of SDG 6 is to ensure the availability and sustainable management of water and sanitation for all (UN, n.d.-b). Significant progress on this goal, as outlined by the Sustainable and Millennium Development Goals alike, has been challenging for Thailand (UN, n.d.; World, n.d.). Thailand's Ministry of Health's Report on Drinking Water Quality for 2009-2019 revealed that only 40.8% of available water was safe for consumption in households. The country's population growth and increasing tourist numbers, coupled with inadequate drainage systems, have further exacerbated the issue of access to safe-to-consume drinking water (UN, n.d.-b). Despite the government's efforts to achieve SDG 6, the percentage of poor-quality water sources doubled from 9% to 18% between 2018 and 2019 (UN, n.d.-b). 
+
+For the reasons discussed, this analysis will focus on Thailand's progress towards achieving SDG 6.2.1a since the country’s adoption of the goal in 2015 (UN, n.d.-a). This particular indicator examines the "proportion of population using safely managed sanitation services (UN, n.d.-a)". The data for SDG 6.2.1a is categorized by location type (rural or urban), which will allow additional insight into whether progress on the goal differs by location (WHO, 2023). Specifically, this analysis will test the hypothesis that use of sanitation services in Thailand is independent from location type (H0).
+
+R will be used to extract, examine, and analyze SDG 6.2.1a data collected from the World Bank’s data repository for the Sustainable Development Goals (UN, n.d.-a; World, 2023). In addition to this, Tableau will be used to create additional graphical representations of the data (Figure 2).
+
+
+## **Data Extraction**
+
+The World Bank’s DataBank is a repository containing data from 261 countries across 85 different datasets (World, 2023). The Sustainable Development Goals' database was accessed via the DataBank to acquire a subset of SDG 6.2.1a data from 2000-2020 (World, 2023). This information was downloaded in .csv format for analysis in R.
+
+## **Methodology**
+
+```{r, echo=FALSE,message=FALSE}
+library(dplyr)
+library(tidyverse)
+library(ggstatsplot)
+library(ggplot2)
+library(png)
+library(pwr)
+```
+
+
+### R
+Examination of the extracted dataset (World, 2023) revealed a makeup of 21 interval percentage variables (X2000..YR2000-X2020..YR2020) as well as four categorical variables (Country.Name, Country.Code, Series.Name, and Series.Code).
+
+```{r, echo=FALSE}
+# WORKING DIRECTORY
+setwd("C:/Users/Aly/Desktop/RStudio/GitHub/SDG/Thailand/Water & Sanitation")
+```
+
+```{r}
+# DATA LOAD
+THA2000_2020 <- read.csv("THA6.2.1_META.csv")
+summary(THA2000_2020)
+```
+
+For the purpose of statistical analysis, the 21 interval variables were transformed to numeric and multiplied by 10 to represent count data in proportions of 1,000. Proportions of 1,000 (instead of 100) were used so that decimal point percentage changes could be observed. In addition to this, a "Location" column was added to the dataframe. Columns 5-19 (X2000..YR2000-X2014..YR2014) were removed since inspection of the data suggests that there is adequate data for the years 2015-2020. Rows 3-10 were also removed since they did not contain any relevant data on inspection. 
+
+```{r,warning=FALSE}
+# TRANSFORMING VALUES
+
+  # year values to numeric
+THA2000_2020 <- THA2000_2020 %>% mutate_at(c('X2000..YR2000.','X2001..YR2001.','X2002..YR2002.','X2003..YR2003.',
+                                             'X2004..YR2004.','X2005..YR2005.','X2006..YR2006.','X2007..YR2007.',
+                                             'X2008..YR2008.','X2009..YR2009.','X2010..YR2010.','X2011..YR2011.',
+                                             'X2012..YR2012.','X2013..YR2013.','X2014..YR2014.','X2015..YR2015.',
+                                             'X2016..YR2016.','X2017..YR2017.','X2018..YR2018.','X2019..YR2019.', 
+                                             'X2020..YR2020.'), as.numeric)
+  
+  # multiply to replace percentage with counts*10
+multiply <- function(x,y=10){
+  x*y
+}
+
+THA2000_2020[1:2,5:25] <- multiply(THA2000_2020[1:2,5:25],)
+
+  # add location column
+THA2000_2020$Location <- c("RURAL", "URBAN")
+
+#remove unnecessary columns and rows
+THA2000_2020 <- THA2000_2020[,-c(5:19)]
+THA2000_2020 <- THA2000_2020[-c(3,4,5,6,7,8,9,10), ]
+
+head(THA2000_2020)
+```
+
+The dataframe "WITHOUT" was created to represent the proportion of population not using safely managed sanitation services. Columns in this dataframe mirrored the final selection of columns from the original dataframe (Country.Name, Country.Code, Series.Name, Series.Code, X2015..YR2015-X2020..YR2020, and Location). Values for Series.Name were set to "Not using safely managed sanitation services, rural" and "Not using safely managed sanitation services, urban" for the new dataframe. Meanwhile, counts for X2015..YR2015-X2020..YR2020 in the “WITHOUT” dataframe were calculated by creating and applying a subtraction function to X2015..YR2015-X2020..YR2020 values from the initial dataframe.
+
+```{r}
+  # creating dataframe for "Not using safely managed sanitation services"
+WITHOUT <- data.frame(Country.Name = THA2000_2020$Country.Name, Country.Code = THA2000_2020$Country.Code,
+                      Series.Name = c("Not using safely managed sanitation services, rural",
+                                      "Not using safely managed sanitation services, urban"),
+                      Series.Code = THA2000_2020$Series.Code,
+                      THA2000_2020[,5:10], 
+                      Location = THA2000_2020$Location,
+                      stringsAsFactors = FALSE)
+
+  # creating counts for "Not using safely managed sanitation services"
+subtract <- function(x=1000,y){
+  x-y
+}
+
+WITHOUT[1:2,5:10] <- subtract(,WITHOUT[1:2,5:10])
+WITHOUT
+```
+
+An additional dataframe (WITH-WITHOUT) was created to combine the two previous dataframes, accounting for counts of households using and not using safely managed sanitation services. The count data was also rounded to whole numbers and was sorted by location (RURAL, URBAN).
+
+```{r}
+# COMBINING DATAFRAMES
+
+WITH_WITHOUT <- rbind(THA2000_2020, WITHOUT) %>%
+  arrange(Location)
+
+  # rounding count data
+WITH_WITHOUT[1:4,5:10] <- round(WITH_WITHOUT[1:4,5:10], digits = 0)
+WITH_WITHOUT
+```
+
+Examination of *WITH-WITHOUT* revealed five categorical predictor variables along with six numerical response variables. Of these variables, two related predictor variables appeared most relevant to the hypothesis in question -- **Series.Name** and **Location**. Meanwhile, the six response variables all had one attribute in common -- they were time indicators. The characteristics of *WITH-WITHOUT*, therefore, suggested that grouping, filtering, and restructuring was required for the variables of interest. A new dataframe, *COUNTS_LOC*, was created to perform the regrouping, restructuring, and filtering of data.
+
+The first change made to *COUNTS_LOC* was removing **Country.Name**, **Country.Code**, and **Series.Code** from the dataframe since they were not needed for analysis. From there, *COUNTS_LOC* was restructured into long format in order to group the data by **Year**. The variable **Count** was also created to coincide with calculated counts for each category of **Series.Name** by **Location** and **Year**. The original values for **Year** (X2015..YR2015.:X2020..YR2020.) were also replaced with numeric values (2015:2020). Further examination of **Series.Name** made it apparent that the variable could be restructured into a binomial variable should the location portion of **Series.Name** be ignored, which was deemed appropriate given then presence of the variable **Location**. As a result, **Series.Name** was renamed **Use** with a binomial Yes/No value. The resulting dataframe from the changes made to *COUNTS_LOC* was saved as the R object *COUNTS_YRS_LOC*. This is the dataframe that will be used for hypothesis testing.
+
+```{r}
+COUNTS_LOC <- WITH_WITHOUT
+
+COUNTS_LOC <- COUNTS_LOC[,-c(1,2,4)]
+
+COUNTS_YRS_LOC <- gather(COUNTS_LOC, Year, Count, X2015..YR2015.:X2020..YR2020., factor_key=FALSE)
+
+COUNTS_YRS_LOC$Series.Name <- rep(c("Yes","No"), 12)
+
+COUNTS_YRS_LOC$Year <- c(rep(2015, 4),rep(2016, 4),rep(2017,4),rep(2018,4),rep(2019,4),rep(2020,4))
+
+names(COUNTS_YRS_LOC)[names(COUNTS_YRS_LOC) == 'Series.Name'] <- 'Use'
+
+COUNTS_YRS_LOC
+```
+
+Given the presence of two binomial predictor variables (**Use** and **Location**) and a single ordinal predictor variable (**Year**) with a limited range, it was decided to treat **Year** as an additional categorical variable. The existence of multiple categorical/binomial predictor variables and a **Count** response variable made it apparent that the data was best suited for a non-parametric test. 
+
+Since the data contains repeated measures across multiple years, and therefore violates the independent observations assumption, multiple chi-square tests (for each year) were performed at once using the grouped_ggbarstats() function. Of note, McNemar's chi-square test was considered, however was not chosen so that the relationship between urban and rural locations could be analyzed (versus the relationship between years).
+
+The variable arguments for grouped_ggbarstats() were set as follows: X = **Location**, Y = **Use**, counts = **Count**, and grouping.var = **Year**. Additional arguments were used to combine the plots from each individual chi-square test into a single plot. The results from this R code chunk was stored as *CHI_LOC_YR*. 
+
+```{r}
+## PERFORMING CHI-SQUARE TESTS
+
+CHI_LOC_YR <- grouped_ggbarstats(
+  #arguments required by ggbarstats()
+  data = COUNTS_YRS_LOC,
+  x = Location,
+  y = Use,
+  counts = Count,
+  grouping.var = Year,
+  perc.k = 1,
+  package = "ggsci",
+  palette = "category10_d3",
+  # arguments relevant for `combine_plots()`
+  title.text = "People using safely managed sanitation services by location and year",
+  plotgrid.args = list(nrow = 2,ncol=3))
+```
+```{r fig.height=12, fig.width=12, fig.align='center',echo=FALSE}
+plot(CHI_LOC_YR)
+```
+Figure 1. Chi-Square Distributions and Results by Year
+
+### Tableau
+
+To determine whether a trend exists between individual chi-square p-values, a line graph that plots the individual p-values against the **Year** variable was generated in Tableau. The dataframe *CHI_PVALS*, containing p-values and their corresponding years (extracted from *CHI_LOC_YR*), was created in R for import into Tableau. Once *CHI_PVALS* was imported into Tableau, **Year** was converted to a whole number value and **P.Value** into decimal format under the *Data Source* tab. A worksheet, with column = **Year** and row = **P.Value**, was created to generate a line graph of the data. The resulting graph (Figure 2) was then downloaded in .png format and embedded into this RMarkdown file. 
+
+```{r}
+CHI_PVALS <- data.frame(P.Value = c(CHI_LOC_YR[[1]][["labels"]][["subtitle"]][[3]][[3]],
+                                   CHI_LOC_YR[[2]][["labels"]][["subtitle"]][[3]][[3]],
+                                   CHI_LOC_YR[[3]][["labels"]][["subtitle"]][[3]][[3]],
+                                   CHI_LOC_YR[[4]][["labels"]][["subtitle"]][[3]][[3]],
+                                   CHI_LOC_YR[[5]][["labels"]][["subtitle"]][[3]][[3]],
+                                   CHI_LOC_YR[[6]][["labels"]][["subtitle"]][[3]][[3]]),
+                       Year = c(2015,2016,2017,2018,2019,2020),
+                       stringsAsFactors = FALSE)
+
+save(CHI_PVALS, file = "Chi_PVals_SDG6_2_1a.rdata")
+```
+```{r,echo=FALSE}
+knitr::include_graphics("GGBARSTATS/Chi_PVals_SDG6.2.1.png")
+```
+Figure 2. Line graph plotting individual p-values from chi-square tests over the variable, *Year*
+
+## **Results**
+
+### Chi-Square Test for Independence
+
+The results for each chi-square test are included at the top of each plot in Figure 1. By looking at the p-values for each test, we can see that each year from 2015 to 2020 produced a significant p-value. For this reason, we were able to reject the null hypothesis that **Location** is independent from **Use** across all years. In addition to this, we can also see that this relationship between the two variables appears to increase by year, with 2020 producing the most significant result among all years.
+
+
+### Tableau
+
+Examination of the line graph (Figure 2) produced in Tableau reveals an obvious linear trend between **Year** and **P.Value**, as suggested by Figure 1. The line graph (Figure 2) depicts a clear inverse relationship between the two variables, where **P.Value** decreases in value (becomes more significant) as **Year** increases.
+
+
+## **Discussion**
+
+The results from this analysis suggests an inverse relationship between rural use and urban use over time, with the proportion of rural use decreasing as the proportion of urban use increases. This suggests that gains in sanitation services use are not being distributed equally between urban and rural locations, with the increase in use being more likely to occur in urban areas. This inverse relationship also appears more significant in more recent years, meaning that an increasing disparity in sanitation service use may be occurring. To take a further look into the increasing significance of the relationship between **Location** and **Year**, it is suggested that a more complex statistical model (such as a GEE model with random effect) is used to model the effect of all three predictor variables (including **Year**) on the response variable.
+
+Overall, it is recommended that progress on SDG 6.2.1a is continuously monitored, with equitable access (as opposed to overall increased access) to sanitation services being a key consideration.
+
+## **Limitations**
+
+This analysis was limited due to the fact that raw counts of data on SDG 6.2.1a were not available for Thailand. As a result, this analysis had to rely on artificial counts that were generated by transforming proportions. For this reason, it was not appropriate to conduct power calculations during this analysis as such calculations would be based on artificial sample sizes. 
+
+Similarly, the linear trend observed in Figure 2 could not be tested for significance due to the small number of years observed. 
+
+
+## References
+
+International Monetary Fund [IMF]. (2023). The IMF and the Sustainable Development Goals (SDG). International Monetary Fund. https://www.imf.org/en/About/Factsheets/Sheets/2023/IMF-Sustainable-development-goals-SDGs
+
+Patil, I. (n.d.). Ggbarstats. GitHub. Retrieved January 5, 2023, from https://indrajeetpatil.github.io/ggstatsplot/articles/web_only/ggbarstats.html
+
+United Nations [UN]. (n.d.-a). Global indicator framework for the Sustainable Development Goals and targets of the 2030 Agenda for Sustainable Development. United Nations. Retrieved January 5, 2023, from https://unstats.un.org/sdgs/indicators/Global%20Indicator%20Framework%20after%202023%20refinement_Eng.pdf
+
+United Nations [UN]. (n.d.-b). Thailand: Achieving Progress on SDG 6. United Nations: Department of Economic and Social Affairs. Retrieved January 2, 2023, from https://sdgs.un.org/basic-page/thailand-34142
+
+World Bank Group. (2023). Sustainable Development Goals (SDGs): DataBank. The World Bank: IBRD, IDA. https://databank.worldbank.org/source/sustainable-development-goals-(sdgs)
+
+World Health Organization [WHO]. (n.d.). Millennium Development Goals (MDGs). Millennium Development Goals (MDGs). Retrieved January 5, 2023, from https://www.who.int/news-room/fact-sheets/detail/millennium-development-goals-(mdgs)
+
+
