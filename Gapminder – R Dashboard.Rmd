@@ -1,0 +1,128 @@
+---
+title: "Gapminder Dashboard"
+output: 
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    social: [ "twitter", "facebook", "menu"]
+    source_code: embed
+---
+
+```{r setup, include=FALSE}
+library(flexdashboard)
+library(knitr)
+library(DT)
+library(rpivotTable)
+library(ggplot2)
+library(plotly)
+library(dplyr)
+library(openintro)
+library(highcharter)
+library(ggvis)
+library(readxl)
+library(kableExtra)
+```
+
+Data
+=============================================
+<br>
+<font size = "5">Gapminder Data -- Head & Tail</font>
+<br>
+```{r}
+gapminder <- read.csv("gapminder.csv")
+
+gapminder[c(1:6,1699:1704),1:6] %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = T) %>%
+  pack_rows("Head", 1, 6, label_row_css = "background-color: #bebebe;") %>%
+  pack_rows("Tail", 7, 12, label_row_css = "background-color: #bebebe;")
+```
+<br>
+<br>
+<font size = "5">Gapminder Summary</font>
+<br>
+```{r}
+options(knitr.kable.NA = '')
+summary(gapminder) %>%
+  kbl() %>%
+  kable_styling(bootstrap_options = c("striped", "hover"), full_width = T)
+```
+
+
+Boxplots
+=============================================
+
+### **GDP Per Capita** by *Continent & Country (1952-2007)*
+
+```{r}
+plot_ly(gapminder, x = ~gdpPercap, y = ~country) %>%
+add_boxplot(color = ~continent) %>%
+layout(yaxis = list(title = ""),
+xaxis = list(title = "GDP Per Capita"))
+```
+
+
+Scatterplot 1 {data-navmenu="Scatterplots"}
+=============================================
+
+
+### **GDP Per Capita** by *Life Expectancy (1952-2007)*
+
+```{r}
+p <- ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + geom_point() + facet_wrap(~year)
+ggplotly(p)
+```
+
+Scatterplot 2 {data-navmenu="Scatterplots"}
+=============================================
+
+### **Logarithmic GDP Per Capita** by *Life Expectancy (1952-2007)*
+
+```{r}
+p <- ggplot(gapminder, aes(x = gdpPercap, y = lifeExp, color = continent, size = pop)) + geom_point() + facet_wrap(~year) + scale_x_log10()
+ggplotly(p)
+```
+
+Tree-Map
+=============================================
+
+### **Average Life Expectancy** by *Country*
+
+```{r}
+tree_data <- gapminder %>%
+  group_by(country) %>%
+  summarise(avg_lifeExp = mean(lifeExp)) %>%
+  arrange(-avg_lifeExp) %>%
+  mutate(parents = "Average Life Expectancy 1952-2007") %>%
+  ungroup() 
+  
+  plot_ly(data = tree_data,
+          type = "treemap",
+          values = ~avg_lifeExp,
+          labels = ~country,
+          parents =  ~parents,
+          domain = list(column=0),
+          name = "Avg Life Expectancy 1952-2007",
+          textinfo = "label")
+```
+
+Sources
+=============================================
+
+<font size ="6">**Data Sources**</font>
+
+<font size ="5">
+Data used for the creation of this dashboard includes data compiled from various sources by Gapminder Foundation. Datasets can be located at [gapminder.org](https://gapminder.org).
+</font>
+<br>
+
+<font size ="6">**References**</font>
+
+<font size ="5">
+Gapminder (2021a). GDP per capita, constant PPP dollars: v26 [Data set]. Gapminder Foundation. http://www.gapminder.org/data/
+
+Gapminder (2021b). GM-Population - Dataset - v7 [Data set]. Gapminder Foundation. http://www.gapminder.org/data/
+
+Gapminder (2021c). _GM-Life Expectancy- Dataset - v12 [Data set]. Gapminder Foundation. http://www.gapminder.org/data/
+</font>
+
+
