@@ -1,0 +1,115 @@
+---
+title: "Programming Tools & Techniques in Data Management"
+author: "A. Malinish"
+date: "2020-11-26"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+### Required Packages
+
+```{r}
+library(psych)
+```
+
+
+## Normal Distribution Density Plot
+
+In this section, a standard normal distribution is generated and displayed as a density plot. 
+
+```{r}
+x1 = seq(from = -6, to = 6, by = 0.01)
+y1 = dnorm(x1)
+plot(x1, y1, col = 7)
+```
+
+## Boxplot
+
+This R code chunk first examines the structure of the *"airquality"* dataset and converts its **Month** variable from an integer to factor variable. A boxplot that plots **Month** against **Temp** is then generated. The boxplot reveals that **Month** = 7 has the highest mean **Temp**; meanwhile, **Month** = 9 appears to have the largest range of **Temp** values. 
+
+```{r}
+data(airquality)
+str(airquality)
+airquality$Month <- as.factor(airquality$Month)
+attach(airquality)
+boxplot(Temp ~ Month, col = "skyblue")
+```
+
+## Creating and Storing Functions
+
+A new function is created and stored as **FunData** in this step. **FunData** is used to create and specify values for new variables and return the variables as a dataframe. **FunData** is then used to created the dataframe, *df*.
+
+```{r}
+FunData <- function(){
+  ID = 1:20
+  Gender = rep(c("M","F"),10)
+  Age = c(19,20,19,20,21,22,23,19,18,24,21,22,19,20,21,23,21,22,20,18)
+  Weight = rnorm(20, mean = 130, sd = 5)
+  Height = rnorm(20, mean = 70, sd = 4)
+  return(data.frame(ID,Gender,Age,Weight,Height))
+}
+
+df <- FunData()
+df
+```
+
+## Computing Mean Values
+
+Mean values for **Age**, **Weight**, and **Height** by **Gender** from the dataframe *df* are calculated in this step using the tapply() function. Mean values are as follows:
+<br>
+
+* **Age**, **Gender**
+  + Female: 21.0
+  + Male: 20.2
+
+* **Weight**, **Gender**
+  + Female: 131.8713
+  + Male: 128.8837
+  
+* **Height**, **Gender**,
+  + Female: 71.20746
+  + Male: 71.07279
+  
+```{r}
+attach(df)
+tapply(Age, Gender, mean)
+
+tapply(Weight, Gender, mean)
+
+tapply(Height, Gender, mean)
+```
+
+## Creating Calculated Variable
+
+The dataset, *bodyfat* (Penrose, 1985), was imported into R and stored as *bodyfat* for this section. The structure of *bodyfat* (Penrose, 1985) includes 252 observations comprised of 15 variables. An additional variable, **bmi**, was created by performing manual calculations for **bmi** and storing them as a vector. The cbind() function was then used to add the vector of **bmi**'s to *bodyfat*. A summary of the variables shows that **bmi** has a mean value of 25.94.
+
+```{r}
+bodyfat <- read.csv("bodyfat.csv")
+str(bodyfat)
+
+bmi <- 703*bodyfat$weight/bodyfat$height^2
+bodyfat <- cbind(bodyfat,bmi)
+
+head(bodyfat)
+summary(bodyfat)
+```
+
+## Correlation Matrix
+
+The pairs.panels() function from the "psych" function was used to generate a correlation matrix for all of the variables in the *bodyfat* dataset. 
+
+The correlation matrix of **density**, **bodyfat**, **weight**, **height**, and **bmi** indicates that the strongest correlation exists between **density** and **bodyfat** (Pearson correlation = -0.99). This Pearson correlation value represents a negative correlation, meaning that as one variable increases in value, the other variable decreases in value. Meanwhile, the strongest positive correlation exists between **bodyfat** and **weight** (Pearson correlation = 0.61). This type of correlation suggests that both variables increase and decrease with one another.
+
+```{r}
+pairs.panels(bodyfat[,c(1,2,4,5,16)])
+```
+<br>
+
+## References
+
+From "Generalized Body Composition Prediction Equation for Men Using Simple Measurement Techniques [Data set]," by Penrose, K., Nelson, A. and Fisher, A. (1985). *Medicine and Science in Sports and Exercise, 17*(189). http://dx.doi.org/10.1249/00005768-198504000-00037
+
+Revelle, W. (2020). psych: Procedures for Psychological, Psychometric, and Personality Research. *Northwestern University*. https://CRAN.R-project.org/package=psych
