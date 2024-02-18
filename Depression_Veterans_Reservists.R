@@ -17,7 +17,7 @@ library(ggplot2)
 
 # NSDUH_2019 Dataset Import
 
-setwd("C:/Users/Aly/Desktop/RStudio/Practicum_Project")
+setwd("C:/File/Path.txt)
 
 NSDUH_2019 <- read_delim("NSDUH_2019_Tab.txt", 
                          delim = "\t", escape_double = FALSE, 
